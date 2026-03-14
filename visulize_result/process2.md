@@ -1,0 +1,7 @@
+1. 資金匯集網路圖 (Hub-and-Spoke Graph)這是抓洗錢集團或車手最直觀的視覺特徵。一般用戶的轉帳對象通常很分散且隨機，但集團洗錢會呈現出高度對稱的「蜘蛛網」或「漏斗」形狀。作法： 將 user_id 當作節點 (Node)，將虛擬貨幣提領的目標錢包地址 to_wallet 或內部轉帳的對象 relation_user_id  當作邊 (Edge) 連接起來。視覺特徵： * 星狀結構： 在畫面上會看到數十個毫無關聯的 user_id ，全部指向同一個 to_wallet 或 relation_user_id 。鏈狀結構 (Layering)： A 轉給 B，B 轉給 C，資金快速且全額地在短時間內轉移。
+
+2. 資金流轉桑基圖 (Sankey Diagram Flow)用來視覺化用戶「進金到出金的轉換率與留存率」。作法： 追蹤單一使用者的三步行為金額：法幣加值 twd_transfer 的 ori_samount $\rightarrow$ 交易轉換 usdt_twd_trading 的 samount 或 usdt_swap 的 twd_samount $\rightarrow$ 虛幣提領 crypto_transfer 的 ori_samount 。視覺特徵： * 正常用戶： 管線忽粗忽細，因為資金會停留在帳戶內，或者分批提領。異常用戶： 從第一關到最後一關，管線寬度幾乎完全一樣（100% 資金轉換與流出），且通常伴隨極短的停留時間，呈現一條完美的粗直線。
+
+3. IP 共現與行為散佈圖 (IP Co-occurrence Scatter Plot)傳統 IP 特徵只看單一來源，但如果是詐騙農場，他們會共用一組 IP 池。作法： 將 twd_transfer 、crypto_transfer 與 usdt_twd_trading  紀錄的 source_ip 提取出來。X 軸設為 source_ip (可用雜湊或分群編號代替)，Y 軸設為 user_id，打上散佈點。視覺特徵： * 正常情況下，畫面應該是隨機散佈的星空（每個人有各自的 IP）。如果是惡意集團，視覺上會出現垂直或水平的「密集直線」或「方塊矩陣」，這代表一大群不相關的 KYC 帳戶，頻繁在相同的幾個 IP 下單或提領。
+
+4. 24小時時序行為熱力圖 (Temporal Activity Heatmap)機器人程式（Bot）或受控農場的作息，在視覺上與人類截然不同。作法： X 軸為一周 7 天，Y 軸為 24 小時。將 usdt_twd_trading 的 updated_at 或 crypto_transfer 的 created_at  頻率畫成熱力圖。視覺特徵：人類： 半夜（例如凌晨 3 點到 6 點）會有明顯的冷區。機器人/車手： 呈現出異常均勻的顏色分布（24 小時都在動），或者呈現詭異的「棋盤狀」圖案（例如每隔精準的 3 小時就進行一次 API 自動下單，source 為 2 ）。
