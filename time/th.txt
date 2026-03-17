@@ -1,0 +1,16 @@
+閃電過水時間差 (Flash Throughput Velocity)
+概念： 正常的散戶從驗證過關到實際拿錢出來投資，通常會有幾天到幾週的猶豫期。但詐騙集團的人頭戶是「準備好要接錢」的，所以驗證一過，馬上就會有大筆資金進來。
+
+提取欄位：
+
+
+user_info 的 level2_finished_datetime (完成 KYC Level 2 的時間) 。
+
+
+twd_transfer 的 created_at (法幣出入金訂單建立時間) 。
+
+
+crypto_transfer 的 created_at (虛擬貨幣交易建立時間) 。
+
+
+特徵計算： 計算 $\Delta T = $ twd_transfer (首次入金時間) 減去 level2_finished_datetime 。如果這個時間差小於 24 小時甚至幾分鐘，且隨後立刻接上 crypto_transfer (提領出金) ，這就是極高風險的「過水帳號」
