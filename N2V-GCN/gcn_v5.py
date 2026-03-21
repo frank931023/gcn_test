@@ -307,22 +307,27 @@ def permutation_importance(model, data, X_df, feature_names, metric='f1', n_repe
     y_test = data.y.cpu().numpy()[test_idx]
     baseline_f1 = f1_score(y_test, preds[test_idx], zero_division=0)
 
+    X_values = data.x.cpu().numpy().copy()
+    
     importances = {}
-    X_values = X_df.values.copy()
     for j, fname in enumerate(feature_names):
         scores = []
         for _ in range(n_repeat):
             X_perm = X_values.copy()
+            # 取得測試集的索引
+            test_idx = np.where(data.test_mask.cpu().numpy())[0]
+            # 進行洗牌
             perm = np.random.permutation(test_idx)
-            # permute only test rows for column j
             X_perm[test_idx, j] = X_values[perm, j]
-            # replace data.x for evaluation
-            x_tensor = torch.tensor(X_perm, dtype=torch.float).to(next(model.parameters()).device)
+            
+            x_tensor = torch.tensor(X_perm, dtype=torch.float).to(device)
             with torch.no_grad():
                 logits_p = model(x_tensor, data.edge_index)
                 preds_p = logits_p.argmax(dim=1).cpu().numpy()
+            
             f1p = f1_score(y_test, preds_p[test_idx], zero_division=0)
             scores.append(f1p)
+            
         importances[fname] = baseline_f1 - np.mean(scores)
     # sort by importance desc
     imp_series = pd.Series(importances).sort_values(ascending=False)
@@ -396,6 +401,20 @@ if __name__ == '__main__':
     imp_series, baseline_f1 = permutation_importance(model, data, X_df, feature_names, n_repeat=3)
     print('\nTop features by permutation importance (drop in F1):')
     print(imp_series.head(20))
+
+    # save permutation importance to CSV and plot top-20
+    try:
+        imp_series.to_csv('gcn_v5_perm_importance.csv', header=['importance'])
+        top20 = imp_series.head(20)[::-1]
+        plt.figure(figsize=(8,10))
+        sns.barplot(x=top20.values, y=top20.index, palette='viridis')
+        plt.xlabel('Drop in F1 (higher = more important)')
+        plt.title('gcn_v5 Permutation Importance (top 20)')
+        plt.tight_layout()
+        plt.savefig('gcn_v5_perm_importance.png', dpi=150)
+        print('Saved gcn_v5_perm_importance.csv and gcn_v5_perm_importance.png')
+    except Exception as e:
+        print('Warning: failed to save permutation importance plot or csv:', e)
 
     # take top_k features and generate crosses
     top_k = 6
