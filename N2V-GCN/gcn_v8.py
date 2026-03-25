@@ -750,3 +750,34 @@ if __name__ == '__main__':
         print('Warning: failed to generate t-SNE visualization:', e)
 
     print('Done v8.')
+
+    # --------------------------------------------------
+    # 針對 predict_label.csv 產生預測結果檔案 predict_result.csv
+    # --------------------------------------------------
+    try:
+        pred_label_path = '../data/predict_label.csv' if os.path.exists('../data/predict_label.csv') else 'data/predict_label.csv'
+        pred_label_df = pd.read_csv(pred_label_path)
+        if 'user_id' in pred_label_df.columns or pred_label_df.shape[1] == 1:
+            # 兼容只有一欄的情況
+            if 'user_id' not in pred_label_df.columns:
+                pred_label_df.columns = ['user_id']
+            pred_user_ids = pred_label_df['user_id'].astype(int).tolist()
+            user_id_to_idx = {n: i for i, n in enumerate(all_nodes)}
+            pred_idx = [user_id_to_idx[uid] for uid in pred_user_ids if uid in user_id_to_idx]
+            # 檢查有無遺漏
+            if len(pred_idx) < len(pred_user_ids):
+                print(f"Warning: {len(pred_user_ids) - len(pred_idx)} user_ids in predict_label.csv not found in graph nodes.")
+            pred_X = X_stack[pred_idx]
+            pred_probs = clf.predict_proba(pred_X)[:, 1]
+            pred_preds = (pred_probs >= best_t).astype(int)
+            # 匹配 user_id 與預測
+            pred_result_df = pd.DataFrame({
+                'user_id': [uid for uid in pred_user_ids if uid in user_id_to_idx],
+                'pred_status': pred_preds
+            })
+            pred_result_df.to_csv('predict_result.csv', index=False)
+            print(f"已輸出 {len(pred_result_df)} 筆預測結果到 predict_result.csv")
+        else:
+            print('predict_label.csv 檔案缺少 user_id 欄位，無法產生預測結果')
+    except Exception as e:
+        print('predict_label.csv 預測結果產生失敗:', e)
